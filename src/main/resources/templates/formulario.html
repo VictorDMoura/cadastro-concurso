@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Aprovado</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #667eea;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-salvar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 40px;
+            border-radius: 25px;
+            font-weight: bold;
+            width: 100%;
+        }
+        .btn-salvar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-voltar {
+            background: #6c757d;
+            border: none;
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            width: 100%;
+        }
+        .error {
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        .preview-img {
+            max-width: 200px;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 10px;
+            display: none;
+        }
+        .file-info {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <div class="header">
+                <h2><i class="bi bi-person-plus-fill"></i> Cadastro de Aprovado</h2>
+                <p class="text-muted">Preencha todos os campos obrigatórios</p>
+            </div>
+
+            <!-- Mensagem de erro geral -->
+            <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> <span th:text="${erro}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+
+            <form th:action="@{/salvar}" 
+                  th:object="${aprovado}" 
+                  method="post" 
+                  enctype="multipart/form-data">
+
+                <!-- Nome -->
+                <div class="mb-3">
+                    <label for="nome" class="form-label">
+                        <i class="bi bi-person"></i> Nome Completo *
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'" 
+                           id="nome" 
+                           th:field="*{nome}" 
+                           placeholder="Digite seu nome completo"
+                           required>
+                    <div class="error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></div>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="bi bi-envelope"></i> E-mail *
+                    </label>
+                    <input type="email" 
+                           class="form-control" 
+                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" 
+                           id="email" 
+                           th:field="*{email}" 
+                           placeholder="exemplo@email.com"
+                           required>
+                    <div class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                </div>
+
+                <!-- Telefone -->
+                <div class="mb-3">
+                    <label for="telefone" class="form-label">
+                        <i class="bi bi-telephone"></i> Telefone *
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           th:classappend="${#fields.hasErrors('telefone')} ? 'is-invalid'" 
+                           id="telefone" 
+                           th:field="*{telefone}" 
+                           placeholder="(XX) XXXXX-XXXX"
+                           required>
+                    <div class="error" th:if="${#fields.hasErrors('telefone')}" th:errors="*{telefone}"></div>
+                </div>
+
+                <!-- Concursos -->
+                <div class="mb-3">
+                    <label for="concursos" class="form-label">
+                        <i class="bi bi-award"></i> Concursos Aprovados *
+                    </label>
+                    <div id="concursos-container">
+                        <div class="input-group mb-2">
+                            <input type="text" 
+                                   class="form-control" 
+                                   placeholder="Ex: TRF 1ª Região - Técnico Judiciário"
+                                   id="concurso-input"
+                                   autocomplete="off">
+                            <button class="btn btn-primary" type="button" onclick="adicionarConcurso()">
+                                <i class="bi bi-plus"></i> Adicionar
+                            </button>
+                        </div>
+                        <div id="concursos-lista" class="mb-2"></div>
+                    </div>
+                    <input type="hidden" id="concursos-hidden" name="concursos">
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle"></i> Pressione Enter ou clique em Adicionar para adicionar cada concurso
+                    </small>
+                </div>
+
+                <!-- Imagem -->
+                <div class="mb-4">
+                    <label for="file" class="form-label">
+                        <i class="bi bi-image"></i> Foto *
+                    </label>
+                    <input type="file" 
+                           class="form-control" 
+                           id="file" 
+                           name="file" 
+                           accept="image/jpeg,image/jpg,image/png,image/gif"
+                           onchange="previewImage(event)"
+                           required>
+                    <div class="file-info">
+                        <i class="bi bi-info-circle"></i> 
+                        Tamanho máximo: 2MB | Formatos aceitos: JPG, JPEG, PNG
+                    </div>
+                    <img id="preview" class="preview-img" alt="Preview">
+                </div>
+
+                <!-- Botões -->
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <button type="submit" class="btn btn-salvar">
+                            <i class="bi bi-check-circle"></i> Cadastrar
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/" class="btn btn-voltar">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let concursos = [];
+
+        function adicionarConcurso() {
+            const input = document.getElementById('concurso-input');
+            const valor = input.value.trim();
+
+            if (!valor) {
+                alert('Digite um concurso antes de adicionar');
+                input.focus();
+                return;
+            }
+
+            if (concursos.includes(valor)) {
+                alert('Este concurso já foi adicionado');
+                input.value = '';
+                input.focus();
+                return;
+            }
+
+            concursos.push(valor);
+            input.value = '';
+            renderizarConcursos();
+            document.getElementById('concursos-hidden').value = JSON.stringify(concursos);
+            input.focus();
+        }
+
+        function removerConcurso(index) {
+            concursos.splice(index, 1);
+            renderizarConcursos();
+            document.getElementById('concursos-hidden').value = JSON.stringify(concursos);
+        }
+
+        function renderizarConcursos() {
+            const lista = document.getElementById('concursos-lista');
+            lista.innerHTML = '';
+
+            if (concursos.length === 0) {
+                lista.innerHTML = '<p class="text-muted"><i class="bi bi-exclamation-circle"></i> Adicione pelo menos um concurso</p>';
+                return;
+            }
+
+            concursos.forEach((concurso, index) => {
+                const badge = document.createElement('div');
+                badge.className = 'badge bg-primary p-2 mb-2 me-2 d-inline-block';
+                badge.innerHTML = `
+                    ${concurso}
+                    <button type="button" class="btn-close btn-close-white ms-2" 
+                            onclick="removerConcurso(${index})" style="font-size: 0.7rem;"></button>
+                `;
+                lista.appendChild(badge);
+            });
+        }
+
+        document.getElementById('concurso-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                adicionarConcurso();
+            }
+        });
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const input = document.getElementById('concurso-input').value.trim();
+
+            if (input && concursos.length === 0) {
+                e.preventDefault();
+                const resultado = confirm('Você tem um concurso digitado mas não adicionado. Deseja adicioná-lo antes de salvar?');
+                if (resultado) {
+                    adicionarConcurso();
+                    setTimeout(() => this.submit(), 100);
+                }
+                return;
+            }
+
+            if (input && !concursos.includes(input)) {
+                e.preventDefault();
+                const resultado = confirm('Você tem um concurso digitado mas não adicionado. Deseja adicioná-lo antes de salvar?');
+                if (resultado) {
+                    adicionarConcurso();
+                    setTimeout(() => this.submit(), 100);
+                }
+                return;
+            }
+
+            if (concursos.length === 0) {
+                e.preventDefault();
+                alert('Adicione pelo menos um concurso');
+                document.getElementById('concurso-input').focus();
+                return;
+            }
+        });
+
+        function previewImage(event) {
+            const preview = document.getElementById('preview');
+            const file = event.target.files[0];
+            
+            if (file) {
+                const maxSize = 2 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    alert('Arquivo muito grande! Tamanho máximo: 2MB');
+                    event.target.value = '';
+                    preview.style.display = 'none';
+                    return;
+                }
+                
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Tipo de arquivo inválido! Use: JPG, JPEG ou PNG');
+                    event.target.value = '';
+                    preview.style.display = 'none';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        document.getElementById('telefone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 11) {
+                value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+                value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+                e.target.value = value;
+            } else {
+                e.target.value = value.substring(0, 11);
+            }
+        });
+
+        renderizarConcursos();
+    </script>
+</body>
+</html>
