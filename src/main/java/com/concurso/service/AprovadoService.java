@@ -7,13 +7,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AprovadoService {
 
     private static final long MAX_FILE_SIZE = 2 * 1024 * 1024;
     private static final String[] ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png"};
+    private static final long MAX_REGISTROS = 200;
+    private static final int MAX_CONCURSOS = 20;
 
     @Autowired
     private AprovadoRepository aprovadoRepository;
@@ -28,6 +32,10 @@ public class AprovadoService {
     }
 
     public void salvar(Aprovado aprovado, MultipartFile imagem) throws IOException {
+        normalizarConcursos(aprovado);
+        if (aprovado.getId() == null && aprovadoRepository.count() >= MAX_REGISTROS) {
+            throw new IllegalArgumentException("Limite de cadastros atingido (máx. 200)");
+        }
         validarDadosBasicos(aprovado);
         validarImagemEArmazenar(aprovado, imagem);
         aprovadoRepository.save(aprovado);
@@ -51,6 +59,9 @@ public class AprovadoService {
         }
         if (aprovado.getConcursos() == null || aprovado.getConcursos().isEmpty()) {
             throw new IllegalArgumentException("Informe pelo menos um concurso");
+        }
+        if (aprovado.getConcursos().size() > MAX_CONCURSOS) {
+            throw new IllegalArgumentException("Limite de concursos atingido (máx. 20)");
         }
     }
 
@@ -85,5 +96,17 @@ public class AprovadoService {
         if (imagem.isEmpty()) {
             throw new IllegalArgumentException("Arquivo de imagem está vazio");
         }
+    }
+
+    private void normalizarConcursos(Aprovado aprovado) {
+        if (aprovado.getConcursos() == null) {
+            aprovado.setConcursos(new ArrayList<>());
+            return;
+        }
+        List<String> normalizados = aprovado.getConcursos().stream()
+                .map(item -> item == null ? "" : item.trim())
+                .filter(item -> !item.isEmpty())
+                .collect(Collectors.toList());
+        aprovado.setConcursos(new ArrayList<>(normalizados));
     }
 }
