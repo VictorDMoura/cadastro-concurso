@@ -45,10 +45,10 @@ git clone https://github.com/VictorDMoura/cadastro-concurso.git
 cd cadastro-concurso
 
 # Execute com Maven
-./mvnw spring-boot:run
+mvn spring-boot:run
 
 # Ou compile e execute o JAR
-./mvnw clean package
+mvn clean package
 java -jar target/cadastro-concurso-0.0.1-SNAPSHOT.jar
 ```
 
